@@ -1,11 +1,10 @@
-from crypt import methods
-from tabnanny import check
 import slack
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, request, Response
 from slackeventsapi import SlackEventAdapter
+from WelcomeMessage import WelcomeMessage
 
 # loading token
 env_path = Path('.') / '.env'
@@ -27,58 +26,7 @@ message_counts = {}
 welcome_messages = {}
 
 
-# direct msg + tasking user
-class WelcomeMessage:
-    START_TEXT = {
-        'type': 'section',
-        'text': {
-            'type': 'mrkdwn',
-            'text': (
-                'Welcome to this awesome channel! \n\n'
-                '*Get Started by completing the tasks!*'
-            )
-
-        }
-    }
-
-    DIVIDER = {'type': 'divider'}
-
-    def __init__(self, channel, user):
-        self.channel = channel
-        self.user = user
-        self.icon_emoji = ':robot_face:'
-        self.timestamp = ''
-        self.completed = False
-
-    def get_message(self):
-        return {
-            'ts': self.timestamp,
-            'channel': self.channel,
-            'username': 'Welcome Robot!',
-            'icon_emoji': self.icon_emoji,
-            'blocks': [
-                self.START_TEXT,
-                self.DIVIDER,
-                *self._get_reaction_task()
-                # self._get_reaction_task()
-            ]
-        }
-
-    def _get_reaction_task(self):
-        checkmark = ':white_check_mark:'
-        if not self.completed:
-            checkmark = ':white_heart:'
-        text = f'{checkmark} *React to this message!*'
-
-        return [{'type': 'section', 'text': {'type': 'mrkdwn', 'text': text}}]
-        # return {'type': 'section', 'text': {'type': 'mrkdwn', 'text': text}}
-
-# catching event 'message'
-
-# welcome msg tracker
-
-
-def send_welcome_message(channel, user):
+def send_welcome_message(channel, user):  # welcome msg tracker
     welcome = WelcomeMessage(channel, user)
     message = welcome.get_message()
     # ** <- unpack operator for dictionaries
@@ -91,7 +39,7 @@ def send_welcome_message(channel, user):
 
 
 @slack_event_adapter.on('message')
-def message(payload):
+def message(payload):  # catching event 'message'
     # print(payload)
     event = payload.get('event', {})
     channel_id = event.get('channel')
@@ -111,11 +59,9 @@ def message(payload):
             send_welcome_message(f'@{user_id}', user_id)
             # catching commands
 
-# You need to go to Event Subscriptions -> Subscribe to bot events and add in that case reaction_added
-
 
 @slack_event_adapter.on('reaction_added')
-def reaction(payload):
+def reaction(payload):  # You need to go to Event Subscriptions -> Subscribe to bot events and add in that case reaction_added
     event = payload.get('event', {})
     # this payload is different so we need to change it
     channel_id = event.get('item', {}).get('channel')
