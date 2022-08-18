@@ -111,6 +111,29 @@ def message(payload):
             send_welcome_message(f'@{user_id}', user_id)
             # catching commands
 
+# You need to go to Event Subscriptions -> Subscribe to bot events and add in that case reaction_added
+
+
+@slack_event_adapter.on('reaction_added')
+def reaction(payload):
+    event = payload.get('event', {})
+    # this payload is different so we need to change it
+    channel_id = event.get('item', {}).get('channel')
+    user_id = event.get('user')
+
+    if f'@{user_id}' not in welcome_messages:
+        return
+
+    welcome = welcome_messages[f'@{user_id}'][user_id]
+    welcome.completed = True
+
+    # fix of error
+    welcome.channel = channel_id
+
+    message = welcome.get_message()
+    updated_message = client.chat_update(**message)
+    welcome.timestamp = updated_message['ts']
+
 
 @app.route('/ message-count', methods=['POST'])
 def message_count():
